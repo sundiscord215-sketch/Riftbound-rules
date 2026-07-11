@@ -551,6 +551,36 @@ button {
   0% { box-shadow: 0 0 0 3px var(--gold-soft), var(--shadow-card); }
   100% { box-shadow: var(--shadow-card); }
 }
+/* ---------- BLOCK 6 — GLOSSARY EXTRAS ---------- */
+
+.glossary-card[hidden] { display: none; }
+
+.glossary-search {
+  max-width: 980px;
+  margin: 0 0 18px;
+}
+
+.glossary-search input {
+  width: 100%;
+  max-width: 320px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.glossary-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 14px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-md);
+  max-width: 980px;
+}     
 /* ---------- RESPONSIVE ---------- */
 
 @media (max-width: 860px) {
@@ -721,9 +751,12 @@ button {
       </div>
     </section>
 
-    <section class="view" id="glossary-view" hidden>
-      <!-- HOOK: main.js (Block 7) / glossary renderer populates #glossary-grid -->
-      <div class="glossary-grid" id="glossary-grid">
+   <section class="view" id="glossary-view" hidden>
+  <div class="glossary-search">
+    <input type="text" id="glossary-search-input" placeholder="ค้นหา keyword…" autocomplete="off">
+  </div>
+  <!-- HOOK: Block 6 renderGlossary() populates #glossary-grid -->
+  <div class="glossary-grid" id="glossary-grid">
         <article class="glossary-card placeholder-card">
           <h4>Tank</h4>
           <p class="en">Must be assigned lethal damage before any other unit with the same controller.</p>
@@ -1500,19 +1533,197 @@ document.addEventListener("riftbound:data-ready", () => {
 document.addEventListener("riftbound:data-updated", buildSidebar);
 </script>
 <!-- ==========================================================================
-     BLOCK 6 — KEYWORD GLOSSARY PAGE  (not yet built)
-     Planned responsibilities:
-       - renderGlossary(): reuse state.keywords to populate #glossary-grid
-         (A-Z cards), each linking to its rule_ref
-     ========================================================================== -->
-
 <!-- ==========================================================================
-     BLOCK 7 — main.js (app composer)  (not yet built)
-     Planned responsibilities:
-       - orchestrate init order once all blocks exist: load data → render
-         cards → attachTooltips() → buildSidebar()
-       - wire #nav-rules-btn / #nav-glossary-btn view toggle
-       - wire hamburger / sidebar-close / sidebar-scrim for mobile
+     BLOCK 6 — KEYWORD GLOSSARY PAGE
+     ---------------------------------------------------------------------
+     Responsibilities:
+       1. renderGlossary(): read state.keywords → build A-Z sorted
+          .glossary-card grid in #glossary-grid, same markup Block 1's
+          placeholder card already uses (so Block 1's CSS just applies).
+       2. Each card's "ดูกฎเต็ม → <id>" link jumps to the rule card AND
+          switches back to the rules view first (glossary view is hidden,
+          so scrollIntoView on a hidden card wouldn't scroll correctly).
+       3. wireGlossarySearch(): real-time filter on #glossary-search-input,
+          matching keyword name, short_en, and short_th.
+       4. Removes Block 1's static placeholder card the first time real
+          keyword data exists.
+     Status: DONE
+     Exposes: renderGlossary(), wireGlossarySearch()
+     Depends on: getState() (Block 2), _goToRule()/switchToRulesView() —
+     switchToRulesView() itself is defined in Block 7 (main.js), so the
+     glossary link falls back to a plain hash jump until Block 7 exists.
+     ========================================================================== -->
+<script>
+function _glossaryCardHTML(kw) {
+  const card = document.createElement("article");
+  card.className = "glossary-card";
+  card.dataset.keyword = kw.keyword;
+
+  const h4 = document.createElement("h4");
+  h4.textContent = kw.keyword;
+  card.appendChild(h4);
+
+  if (kw.short_en) {
+    const p = document.createElement("p");
+    p.className = "en";
+    p.textContent = kw.short_en;
+    card.appendChild(p);
+  }
+
+  if (kw.short_th) {
+    const p = document.createElement("p");
+    p.className = "th";
+    p.textContent = kw.short_th;
+    card.appendChild(p);
+  }
+
+  if (kw.rule_ref) {
+    const a = document.createElement("a");
+    a.className = "glossary-ref";
+    a.href = `#${kw.rule_ref}`;
+    a.textContent = `ดูกฎเต็ม → ${kw.rule_ref}`;
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      // Block 7 provides the real view switcher; fall back to hash-only jump.
+      if (typeof switchToRulesView === "function") switchToRulesView();
+      if (typeof _goToRule === "function") _goToRule(kw.rule_ref);
+      else location.hash = kw.rule_ref;
+    });
+    card.appendChild(a);
+  }
+
+  return card;
+}
+
+function renderGlossary() {
+  const grid = document.getElementById("glossary-grid");
+  if (!grid) return;
+
+  const state = typeof getState === "function" ? getState() : { keywords: {} };
+  const keywords = state.keywords || {};
+  const names = Object.keys(keywords).sort((a, b) => a.localeCompare(b));
+
+  if (names.length === 0) return; // keep Block 1's static placeholder card
+
+  grid.innerHTML = "";
+
+  if (names.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "glossary-empty";
+    empty.textContent = "ยังไม่มีข้อมูล keyword — ใช้ปุ่ม Import เพื่อเพิ่มข้อมูล";
+    grid.appendChild(empty);
+    return;
+  }
+
+  for (const name of names) {
+    grid.appendChild(_glossaryCardHTML(keywords[name]));
+  }
+}
+
+function _applyGlossaryFilter(query) {
+  const q = query.trim().toLowerCase();
+  document.querySelectorAll("#glossary-grid .glossary-card").forEach((card) => {
+    const hay = card.textContent.toLowerCase();
+    card.hidden = !(!q || hay.includes(q));
+  });
+}
+
+function wireGlossarySearch() {
+  const input = document.getElementById("glossary-search-input");
+  if (!input) return;
+  input.addEventListener("input", () => _applyGlossaryFilter(input.value));
+}
+
+document.addEventListener("DOMContentLoaded", wireGlossarySearch);
+document.addEventListener("riftbound:data-ready", renderGlossary);
+document.addEventListener("riftbound:data-updated", renderGlossary);
+</script>
+<!-- ==========================================================================
+     <!-- ==========================================================================
+     BLOCK 7 — main.js (APP COMPOSER)
+     ---------------------------------------------------------------------
+     Responsibilities:
+       1. switchToRulesView() / switchToGlossaryView(): toggle #rules-view
+          vs #glossary-view, sync sidebar button active state + topbar text.
+          (Block 6's glossary "ดูกฎเต็ม" link calls switchToRulesView()
+          directly — this is what makes that fallback unnecessary now.)
+       2. Wire mobile nav: hamburger opens sidebar, sidebar-close / scrim
+          click closes it. Auto-closes sidebar after a nav-item tap on
+          mobile so the card is actually visible.
+       3. Safety-net init: Blocks 2-6 already self-wire via
+          DOMContentLoaded / riftbound:data-ready / riftbound:data-updated,
+          so this mostly just wires the view-toggle + mobile buttons —
+          nothing here duplicates data loading or rendering.
+     Status: DONE
+     Exposes: switchToRulesView(), switchToGlossaryView()
+     ========================================================================== -->
+<script>
+function switchToRulesView() {
+  document.getElementById("rules-view").hidden = false;
+  document.getElementById("glossary-view").hidden = true;
+
+  document.getElementById("nav-rules-btn").dataset.active = "true";
+  document.getElementById("nav-glossary-btn").dataset.active = "false";
+
+  document.getElementById("topbar-eyebrow").textContent = "Core Rules";
+  document.getElementById("topbar-heading").textContent = "กฎทั้งหมด";
+}
+
+function switchToGlossaryView() {
+  document.getElementById("rules-view").hidden = true;
+  document.getElementById("glossary-view").hidden = false;
+
+  document.getElementById("nav-rules-btn").dataset.active = "false";
+  document.getElementById("nav-glossary-btn").dataset.active = "true";
+
+  document.getElementById("topbar-eyebrow").textContent = "Reference";
+  document.getElementById("topbar-heading").textContent = "Keyword Glossary";
+}
+
+function _wireViewToggle() {
+  const rulesBtn = document.getElementById("nav-rules-btn");
+  const glossaryBtn = document.getElementById("nav-glossary-btn");
+  if (rulesBtn) rulesBtn.addEventListener("click", switchToRulesView);
+  if (glossaryBtn) glossaryBtn.addEventListener("click", switchToGlossaryView);
+}
+
+/* ---------- MOBILE SIDEBAR ---------- */
+
+function _openMobileSidebar() {
+  document.getElementById("sidebar").classList.add("open");
+  document.getElementById("sidebar-scrim").classList.add("open");
+}
+
+function _closeMobileSidebar() {
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("sidebar-scrim").classList.remove("open");
+}
+
+function _wireMobileSidebar() {
+  const hamburger = document.getElementById("hamburger-btn");
+  const closeBtn = document.getElementById("sidebar-close");
+  const scrim = document.getElementById("sidebar-scrim");
+  const tree = document.getElementById("nav-tree");
+
+  if (hamburger) hamburger.addEventListener("click", _openMobileSidebar);
+  if (closeBtn) closeBtn.addEventListener("click", _closeMobileSidebar);
+  if (scrim) scrim.addEventListener("click", _closeMobileSidebar);
+
+  // Auto-close after tapping a rule link on mobile, so the card is visible.
+  if (tree) {
+    tree.addEventListener("click", (e) => {
+      if (e.target.closest(".nav-item") && window.innerWidth <= 860) _closeMobileSidebar();
+    });
+  }
+}
+
+/* ---------- INIT ---------- */
+
+document.addEventListener("DOMContentLoaded", () => {
+  _wireViewToggle();
+  _wireMobileSidebar();
+});
+</script>
      ========================================================================== -->
 
 </body>
