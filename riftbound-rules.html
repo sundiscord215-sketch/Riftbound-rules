@@ -536,7 +536,21 @@ button {
   text-decoration: none;
   border-bottom: 1px dotted #E8CE8D;
 }
+/* ---------- BLOCK 5 — NAV COLLAPSE / SEARCH FILTER / HIGHLIGHT ---------- */
 
+.nav-group.collapsed .nav-group-items { display: none; }
+
+.nav-item[hidden] { display: none; }
+.nav-group[hidden] { display: none; }
+
+.rule-card[hidden] { display: none; }
+
+.rule-card.highlight { animation: rc-flash 1.6s ease-out; }
+
+@keyframes rc-flash {
+  0% { box-shadow: 0 0 0 3px var(--gold-soft), var(--shadow-card); }
+  100% { box-shadow: var(--shadow-card); }
+}
 /* ---------- RESPONSIVE ---------- */
 
 @media (max-width: 860px) {
@@ -1328,14 +1342,163 @@ document.addEventListener("riftbound:data-updated", () => attachTooltips());
 </script>
 
 <!-- ==========================================================================
-     BLOCK 5 — NAVIGATION & SEARCH  (not yet built)
-     Planned responsibilities:
-       - buildSidebar(): read state → group #nav-tree by section (000/100/500/600/700)
-       - wireSearch(): real-time filter on #search-input across id / en / th / keyword
-       - click result → scroll to card + temporary highlight
-       - manage #<id> URL hash so links to a specific rule are shareable
+<!-- ==========================================================================
+     BLOCK 5 — NAVIGATION & SEARCH
+     ---------------------------------------------------------------------
+     Responsibilities:
+       1. buildSidebar(): rebuild #nav-tree from state.rules, grouped by
+          section bucket (000/100/500/600/700), replacing Block 1's static
+          placeholder nav the first time real data exists.
+       2. wireSearch(): real-time filter on #search-input — matches id,
+          title_en/th, and every content item's en/th text. Filters both
+          the sidebar nav items AND the rendered cards in #card-container.
+       3. Clicking a nav item scrolls to that card and adds a brief
+          .highlight flash (see Block 5 CSS).
+       4. Keeps the URL hash (#<id>) in sync so a specific rule is
+          shareable/deep-linkable, including on initial page load.
+     Status: DONE
+     Exposes: buildSidebar(), wireSearch()
+     Depends on: _sectionBucket() (Block 3), getState() (Block 2)
      ========================================================================== -->
+<script>
+const SECTION_TITLES = {
+  "000": "Golden & Silver Rules",
+  "100": "Game Concepts",
+  "500": "Playing the Game",
+  "600": "Combat & Actions",
+  "700": "Keywords",
+};
 
+/* ---------- SIDEBAR BUILD ---------- */
+
+function buildSidebar() {
+  const tree = document.getElementById("nav-tree");
+  if (!tree) return;
+
+  const state = typeof getState === "function" ? getState() : { rules: {} };
+  const rules = state.rules || {};
+  const ids = Object.keys(rules).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+  // No real data yet → keep Block 1's static placeholder nav as-is.
+  if (ids.length === 0) return;
+
+  const groups = {};
+  for (const id of ids) {
+    const section = _sectionBucket(id);
+    (groups[section] = groups[section] || []).push(rules[id]);
+  }
+
+  tree.innerHTML = "";
+
+  for (const section of ["000", "100", "500", "600", "700"]) {
+    const items = groups[section];
+    if (!items || items.length === 0) continue;
+
+    const groupEl = document.createElement("div");
+    groupEl.className = "nav-group";
+    groupEl.dataset.section = section;
+
+    const labelBtn = document.createElement("button");
+    labelBtn.className = "nav-group-label";
+    labelBtn.innerHTML = `<span class="nav-dot dot-${section}"></span> ${section} · ${SECTION_TITLES[section]}`;
+    labelBtn.addEventListener("click", () => groupEl.classList.toggle("collapsed"));
+    groupEl.appendChild(labelBtn);
+
+    const itemsEl = document.createElement("div");
+    itemsEl.className = "nav-group-items";
+    for (const rule of items) {
+      const label = rule.title_th || rule.title_en || "";
+      const a = document.createElement("a");
+      a.href = `#${rule.id}`;
+      a.className = "nav-item";
+      a.dataset.id = rule.id;
+      a.textContent = label ? `${rule.id} ${label}` : rule.id;
+      itemsEl.appendChild(a);
+    }
+    groupEl.appendChild(itemsEl);
+    tree.appendChild(groupEl);
+  }
+}
+
+/* ---------- SEARCH ---------- */
+
+function _searchHaystack(id, rule) {
+  if (!rule) return id.toLowerCase();
+  const parts = [id, rule.title_en || "", rule.title_th || ""];
+  for (const item of rule.content || []) parts.push(item.en || "", item.th || "");
+  return parts.join(" ").toLowerCase();
+}
+
+function _applySearchFilter(query) {
+  const q = query.trim().toLowerCase();
+  const state = typeof getState === "function" ? getState() : { rules: {} };
+  const rules = state.rules || {};
+
+  document.querySelectorAll("#nav-tree .nav-item").forEach((a) => {
+    const hay = _searchHaystack(a.dataset.id, rules[a.dataset.id]);
+    a.hidden = !(!q || hay.includes(q));
+  });
+
+  document.querySelectorAll("#nav-tree .nav-group").forEach((g) => {
+    const anyVisible = [...g.querySelectorAll(".nav-item")].some((a) => !a.hidden);
+    g.hidden = !anyVisible;
+  });
+
+  document.querySelectorAll("#card-container .rule-card:not(.placeholder-card)").forEach((card) => {
+    const hay = _searchHaystack(card.id, rules[card.id]);
+    card.hidden = !(!q || hay.includes(q));
+  });
+}
+
+function wireSearch() {
+  const input = document.getElementById("search-input");
+  if (!input) return;
+  input.addEventListener("input", () => _applySearchFilter(input.value));
+}
+
+/* ---------- CLICK → SCROLL + HIGHLIGHT + HASH ---------- */
+
+function _goToRule(id) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  history.pushState(null, "", `#${id}`);
+  card.scrollIntoView({ behavior: "smooth", block: "start" });
+  card.classList.add("highlight");
+  setTimeout(() => card.classList.remove("highlight"), 1600);
+}
+
+function _wireNavClicks() {
+  const tree = document.getElementById("nav-tree");
+  if (!tree) return;
+  tree.addEventListener("click", (e) => {
+    const a = e.target.closest(".nav-item");
+    if (!a) return;
+    e.preventDefault();
+    _goToRule(a.dataset.id || a.getAttribute("href").slice(1));
+  });
+}
+
+function _handleHash() {
+  const id = location.hash.replace("#", "");
+  if (id) _goToRule(id);
+}
+
+/* ---------- INIT ---------- */
+
+document.addEventListener("DOMContentLoaded", () => {
+  wireSearch();
+  _wireNavClicks();
+});
+
+window.addEventListener("hashchange", _handleHash);
+
+document.addEventListener("riftbound:data-ready", () => {
+  buildSidebar();
+  _handleHash(); // deep-link on first load, after cards exist in the DOM
+});
+
+document.addEventListener("riftbound:data-updated", buildSidebar);
+</script>
 <!-- ==========================================================================
      BLOCK 6 — KEYWORD GLOSSARY PAGE  (not yet built)
      Planned responsibilities:
