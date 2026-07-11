@@ -362,11 +362,18 @@ button {
 
 .rule-card-body { flex: 1; min-width: 0; }
 
+.rule-card-title-en {
+  margin: 2px 0 2px;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
 .rule-card-title {
   font-family: var(--font-display);
   font-size: 18px;
   font-weight: 600;
-  margin: 2px 0 14px;
+  margin: 0 0 14px;
   color: var(--ink);
 }
 
