@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riftbound — Core Rules</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- ==========================================================================
+     BLOCK 1 — SHELL & LAYOUT (style)
+     Design tokens + layout for sidebar / topbar / cards / glossary / modal.
+     Status: DONE
+     ========================================================================== -->
+<style>
+:root {
+  /* --- surfaces --- */
+  --paper:        #F5F1E7;
+  --paper-alt:    #EDE7D6;
+  --panel:        #FCFAF3;
+  --line:         #DFD6BE;
+  --line-soft:    #E9E2CE;
+
+  /* --- ink --- */
+  --ink:          #23211C;
+  --ink-soft:     #6B6455;
+  --ink-faint:    #948C79;
+
+  /* --- accent (stamp ink) --- */
+  --accent:       #33456B;
+  --accent-soft:  #33456B1A;
+  --gold:         #A97A2A;
+  --gold-soft:    #A97A2A1F;
+
+  /* --- category hues (000 / 100 / 500 / 600 / 700) --- */
+  --cat-000:      #A97A2A; /* gold   — golden/silver rules */
+  --cat-100:      #33456B; /* indigo — game concepts */
+  --cat-500:      #3F6B4A; /* forest — playing the game */
+  --cat-600:      #A24E3B; /* rust   — combat & actions */
+  --cat-700:      #6B4C7A; /* plum   — keywords */
+
+  /* --- semantic boxes --- */
+  --reminder-bg:  #EFEADA;
+  --reminder-line:#C9BE9C;
+  --example-bg:   #EAF0E7;
+  --example-line: #A9C4A0;
+
+  /* --- type --- */
+  --font-display: 'Fraunces', serif;
+  --font-body:    'Source Sans 3', 'IBM Plex Sans Thai', sans-serif;
+  --font-mono:    'IBM Plex Mono', monospace;
+
+  /* --- shape / motion --- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --shadow-card: 0 1px 2px rgba(35,33,28,0.04), 0 4px 14px rgba(35,33,28,0.06);
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- APP LAYOUT ---------- */
+
+.app {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+}
+
+/* ---------- SIDEBAR ---------- */
+
+.sidebar {
+  background: var(--paper-alt);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.brand-mark {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 13px;
+  background: var(--accent);
+  color: var(--panel);
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.brand-text h1 {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.brand-text p {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.sidebar-close {
+  display: none;
+  margin-left: auto;
+  font-size: 18px;
+  color: var(--ink-soft);
+}
+
+.sidebar-search { padding: 14px 16px; }
+
+#search-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+}
+
+#search-input::placeholder { color: var(--ink-faint); }
+
+.nav-tree { flex: 1; overflow-y: auto; padding: 4px 10px 12px; }
+.nav-group { margin-bottom: 2px; }
+
+.nav-group-label {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  border-radius: var(--radius-sm);
+  text-align: left;
+}
+
+.nav-group-label:hover { background: var(--line-soft); }
+
+.nav-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot-000 { background: var(--cat-000); }
+.dot-100 { background: var(--cat-100); }
+.dot-500 { background: var(--cat-500); }
+.dot-600 { background: var(--cat-600); }
+.dot-700 { background: var(--cat-700); }
+
+.nav-group-items {
+  display: flex;
+  flex-direction: column;
+  padding-left: 26px;
+  margin: 2px 0 8px;
+}
+
+.nav-item {
+  padding: 6px 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+.nav-item:hover { background: var(--line-soft); color: var(--ink); }
+
+.sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid var(--line-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-btn {
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: left;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.sidebar-btn:hover { border-color: var(--accent); }
+
+.sidebar-btn[data-active="true"] {
+  background: var(--accent);
+  color: var(--panel);
+  border-color: var(--accent);
+}
+
+.sidebar-btn-ghost { background: transparent; border-style: dashed; }
+.sidebar-scrim { display: none; }
+
+/* ---------- MAIN / TOPBAR ---------- */
+
+.main { min-width: 0; display: flex; flex-direction: column; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 28px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.hamburger { display: none; font-size: 20px; color: var(--ink); }
+.topbar-title { flex: 1; }
+
+.topbar-eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.topbar-title h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 2px 0 0;
+}
+
+.topbar-status {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+/* ---------- RULE CARDS ---------- */
+
+.view { padding: 26px 28px 80px; }
+
+.card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 780px;
+}
+
+.rule-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 22px 24px 22px 22px;
+  display: flex;
+  gap: 16px;
+  position: relative;
+  border-left: 4px solid var(--ink-faint);
+  scroll-margin-top: 90px;
+}
+
+.rule-card[data-section="000"] { border-left-color: var(--cat-000); }
+.rule-card[data-section="100"] { border-left-color: var(--cat-100); }
+.rule-card[data-section="500"] { border-left-color: var(--cat-500); }
+.rule-card[data-section="600"] { border-left-color: var(--cat-600); }
+.rule-card[data-section="700"] { border-left-color: var(--cat-700); }
+
+.rule-card-badge {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(155deg, #3A2C14, #1E1608);
+  color: #E8CE8D;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1px rgba(232,206,141,0.35);
+  letter-spacing: -0.02em;
+}
+
+.rule-card-body { flex: 1; min-width: 0; }
+
+.rule-card-title-en {
+  margin: 2px 0 2px;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.rule-card-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 14px;
+  color: var(--ink);
+}
+
+.rule-line { padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.rule-line:first-of-type { border-top: none; padding-top: 0; }
+.rule-line.indent-1 { padding-left: 18px; }
+.rule-line.indent-2 { padding-left: 36px; }
+
+.rule-line .num {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--gold);
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.rule-line .en { margin: 0 0 4px; font-size: 14px; color: var(--ink-soft); font-style: italic; }
+.rule-line .th { margin: 0; font-size: 15.5px; color: var(--ink); font-family: var(--font-body); }
+
+.rule-box {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+
+.rule-box .box-label {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.rule-box p { margin: 0 0 3px; font-size: 13.5px; }
+.rule-box .en { color: var(--ink-soft); font-style: italic; }
+.rule-box .th { color: var(--ink); }
+
+.box-reminder { background: var(--reminder-bg); border-color: var(--reminder-line); }
+.box-reminder .box-label { color: #7A6C3E; }
+
+.box-example { background: var(--example-bg); border-color: var(--example-line); border-style: dashed; }
+.box-example .box-label { color: #3F6B4A; }
+
+/* keyword tooltip trigger — visual styling here, behavior wired in Block 4 */
+.keyword {
+  border-bottom: 1.5px dotted var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+  cursor: help;
+}
+
+.empty-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 14px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-md);
+}
+
+/* ---------- GLOSSARY VIEW ---------- */
+
+.glossary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  max-width: 980px;
+}
+
+.glossary-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.glossary-card h4 {
+  font-family: var(--font-display);
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: var(--cat-700);
+}
+
+.glossary-card .en { font-size: 13px; color: var(--ink-soft); font-style: italic; margin: 0 0 6px; }
+.glossary-card .th { font-size: 14px; margin: 0 0 10px; }
+
+.glossary-ref {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* ---------- IMPORT MODAL ---------- */
+
+.modal-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(35,33,28,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 20px;
+}
+
+.modal {
+  background: var(--panel);
+  border-radius: var(--radius-md);
+  width: 100%;
+  max-width: 560px;
+  padding: 22px 24px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.modal-header h3 { font-family: var(--font-display); font-size: 18px; margin: 0; }
+.modal-close { font-size: 16px; color: var(--ink-soft); }
+.modal-desc { font-size: 13px; color: var(--ink-soft); margin: 0 0 14px; }
+
+#import-textarea {
+  width: 100%;
+  min-height: 160px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--paper);
+  resize: vertical;
+}
+
+.modal-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; gap: 12px; }
+.modal-msg { font-size: 12.5px; color: var(--ink-faint); }
+.modal-actions { display: flex; gap: 8px; }
+
+.btn { padding: 9px 16px; border-radius: var(--radius-sm); font-size: 13.5px; font-weight: 500; }
+.btn-primary { background: var(--accent); color: var(--panel); }
+.btn-ghost { background: transparent; border: 1px solid var(--line); }
+
+/* ---------- BLOCK 4 — KEYWORD TOOLTIP POPUP ---------- */
+
+.kw-tooltip {
+  position: fixed;
+  z-index: 100;
+  max-width: 260px;
+  background: var(--ink);
+  color: var(--panel);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.12s var(--ease), transform 0.12s var(--ease);
+}
+
+.kw-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.kw-tooltip .kw-tt-title {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 4px;
+}
+
+.kw-tooltip .kw-tt-en { margin: 0 0 4px; font-style: italic; color: #D8D2C2; }
+.kw-tooltip .kw-tt-th { margin: 0 0 6px; }
+
+.kw-tooltip .kw-tt-link {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #E8CE8D;
+  text-decoration: none;
+  border-bottom: 1px dotted #E8CE8D;
+}
+
+/* ---------- RESPONSIVE ---------- */
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; }
+
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0;
+    width: 280px;
+    height: 100vh;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.25s var(--ease);
+  }
+
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-close { display: block; }
+
+  .sidebar-scrim.open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(35,33,28,0.4);
+    z-index: 35;
+  }
+
+  .hamburger { display: block; }
+  .view { padding: 20px 16px 60px; }
+  .rule-card { flex-direction: column; padding: 18px 16px; }
+  .rule-card-badge { width: 40px; height: 40px; font-size: 12.5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar { transition: none; }
+  .kw-tooltip { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ==========================================================================
+     BLOCK 1 — SHELL & LAYOUT (markup)
+     Static structure only. Data-driven rendering wired in by later blocks.
+     Status: DONE
+     ========================================================================== -->
+
+<div class="app">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span class="brand-mark">RB</span>
+      <div class="brand-text">
+        <h1>Riftbound</h1>
+        <p>Core Rules Reference</p>
+      </div>
+      <button class="sidebar-close" id="sidebar-close" aria-label="ปิดเมนู">✕</button>
+    </div>
+
+    <div class="sidebar-search">
+      <input type="text" id="search-input" placeholder="ค้นหาเลขข้อ, คำ, keyword…" autocomplete="off">
+    </div>
+
+    <!-- HOOK: search-nav.js (Block 5) → buildSidebar() replaces/populates #nav-tree -->
+    <nav class="nav-tree" id="nav-tree">
+      <div class="nav-group" data-section="000">
+        <button class="nav-group-label"><span class="nav-dot dot-000"></span> 000 · Golden &amp; Silver Rules</button>
+        <div class="nav-group-items">
+          <a href="#000" class="nav-item">000 Golden Rule</a>
+          <a href="#050" class="nav-item">050 Silver Rule</a>
+        </div>
+      </div>
+      <div class="nav-group" data-section="100">
+        <button class="nav-group-label"><span class="nav-dot dot-100"></span> 100 · Game Concepts</button>
+        <div class="nav-group-items">
+          <a href="#101" class="nav-item">101 Deck Construction</a>
+          <a href="#119" class="nav-item">119 Game Objects</a>
+        </div>
+      </div>
+      <div class="nav-group" data-section="500">
+        <button class="nav-group-label"><span class="nav-dot dot-500"></span> 500 · Playing the Game</button>
+        <div class="nav-group-items">
+          <a href="#501" class="nav-item">501 The Turn</a>
+          <a href="#527" class="nav-item">527 Chains &amp; Showdowns</a>
+        </div>
+      </div>
+      <div class="nav-group" data-section="600">
+        <button class="nav-group-label"><span class="nav-dot dot-600"></span> 600 · Combat &amp; Actions</button>
+        <div class="nav-group-items">
+          <a href="#604" class="nav-item">604 Kill</a>
+          <a href="#620" class="nav-item">620 Combat</a>
+        </div>
+      </div>
+      <div class="nav-group" data-section="700">
+        <button class="nav-group-label"><span class="nav-dot dot-700"></span> 700 · Keywords</button>
+        <div class="nav-group-items">
+          <a href="#712" class="nav-item">712 Keyword Glossary</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="sidebar-btn" id="nav-rules-btn" data-active="true">📖 กฎทั้งหมด</button>
+      <button class="sidebar-btn" id="nav-glossary-btn">🔑 Keyword Glossary</button>
+      <button class="sidebar-btn sidebar-btn-ghost" id="import-open-btn">⤓ Import ข้อมูล</button>
+    </div>
+  </aside>
+
+  <div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="hamburger" id="hamburger-btn" aria-label="เปิดเมนู">☰</button>
+      <div class="topbar-title">
+        <span class="topbar-eyebrow" id="topbar-eyebrow">Core Rules</span>
+        <h2 id="topbar-heading">กฎทั้งหมด</h2>
+      </div>
+      <div class="topbar-status" id="data-status">
+        <!-- HOOK: data-loader.js (Block 2) updates this -->
+        ยังไม่โหลดข้อมูล
+      </div>
+    </header>
+
+    <section class="view" id="rules-view">
+      <div class="card-container" id="card-container">
+
+        <!-- ===== STATIC PLACEHOLDER CARD (layout reference only) =====
+             HOOK: card-renderer.js (Block 3) → renderCard() generates
+             this same markup dynamically for every rule once data loads.
+             tooltip-engine.js (Block 4) only scans DYNAMICALLY rendered
+             cards, so this placeholder keeps its manual <span class="keyword">
+             markup as-is and is removed the first time real data renders.
+        -->
+        <article class="rule-card placeholder-card" data-section="600" id="626">
+          <div class="rule-card-badge">626</div>
+          <div class="rule-card-body">
+            <h3 class="rule-card-title">The Combat Damage Step</h3>
+
+            <div class="rule-line">
+              <p class="num">626.1</p>
+              <p class="en">When the Showdown closes, Attackers and Defenders resolve Combat Damage at the Battlefield that was attacked, using their current Might.</p>
+              <p class="th">เมื่อ <span class="keyword" data-kw="Showdown">Showdown</span> ปิดลง ฝ่ายโจมตีและฝ่ายรับจะคำนวณ Combat Damage ที่ <span class="keyword" data-kw="Battlefield">Battlefield</span> ที่ถูกโจมตี โดยใช้ค่า <span class="keyword" data-kw="Might">Might</span> ปัจจุบัน</p>
+            </div>
+
+            <div class="rule-line indent-1">
+              <p class="num">626.1.d.1</p>
+              <p class="en">Units with Tank must be assigned Lethal Damage before any other units.</p>
+              <p class="th">ยูนิตที่มี <span class="keyword" data-kw="Tank">Tank</span> ต้องได้รับ Lethal Damage ก่อนยูนิตอื่น</p>
+            </div>
+
+            <div class="rule-box box-reminder">
+              <span class="box-label">Reminder</span>
+              <p class="en">Lethal Damage is nonzero damage equaling or exceeding the Might of a Unit.</p>
+              <p class="th">Lethal Damage คือดาเมจที่มากกว่า 0 และเท่ากับหรือมากกว่าค่า <span class="keyword" data-kw="Might">Might</span> ของยูนิตนั้น</p>
+            </div>
+
+            <div class="rule-box box-example">
+              <span class="box-label">Example</span>
+              <p class="en">If a player has 5 damage to distribute among four 3-Might units, they must assign at least 3 to one before assigning any to another.</p>
+              <p class="th">ถ้าผู้เล่นมีดาเมจ 5 หน่วยที่ต้องแบ่งให้ยูนิต 4 ตัวที่มี Might 3 ต้องแบ่งอย่างน้อย 3 ดาเมจให้ยูนิตหนึ่งก่อน แล้วที่เหลือไปให้ยูนิตอื่น</p>
+            </div>
+          </div>
+        </article>
+        <!-- ===== END PLACEHOLDER CARD ===== -->
+
+        <div class="empty-state" id="empty-state" hidden>
+          <p>ยังไม่มีข้อมูลกฎช่วงนี้ — ใช้ปุ่ม Import เพื่อเพิ่มข้อมูล</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="glossary-view" hidden>
+      <!-- HOOK: main.js (Block 7) / glossary renderer populates #glossary-grid -->
+      <div class="glossary-grid" id="glossary-grid">
+        <article class="glossary-card placeholder-card">
+          <h4>Tank</h4>
+          <p class="en">Must be assigned lethal damage before any other unit with the same controller.</p>
+          <p class="th">ต้องถูกแบ่ง Lethal Damage ก่อนยูนิตอื่นที่ผู้เล่นคนเดียวกันควบคุม</p>
+          <a href="#727" class="glossary-ref">ดูกฎเต็ม → 727</a>
+        </article>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-scrim" id="import-scrim" hidden>
+  <div class="modal" role="dialog" aria-labelledby="import-title">
+    <div class="modal-header">
+      <h3 id="import-title">Import ข้อมูลกฎ</h3>
+      <button class="modal-close" id="import-close-btn" aria-label="ปิด">✕</button>
+    </div>
+    <p class="modal-desc">วางข้อความ JSON ที่ได้จากคอนเวอเซชันอื่น แล้วกด Import เพื่อรวมเข้ากับข้อมูลปัจจุบัน</p>
+    <textarea id="import-textarea" placeholder='[{ "id": "626", "title_en": "...", ... }]'></textarea>
+    <div class="modal-footer">
+      <span class="modal-msg" id="import-msg"></span>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="export-btn">Export ทั้งหมด</button>
+        <button class="btn btn-primary" id="import-submit-btn">Import</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     BLOCK 2 — DATA LOADER + IMPORT SYSTEM
+     Fetches data/manifest.json + rules-*.json + keywords.json, keeps the
+     in-memory state, persists to localStorage, wires the Import/Export modal.
+     Status: DONE
+     Exposes: loadAllRules(), loadKeywords(), importJSON(text), exportState(),
+              getState()
+     Note: manifest.json content is embedded below as DEFAULT_MANIFEST so this
+     single file has something to fall back on; data/manifest.json on disk
+     (when deployed) still takes priority via fetch.
+     ========================================================================== -->
+<script>
+// Embedded copy of data/manifest.json (kept in sync manually until Block 2
+// is split back out for the real GitHub deploy).
+const DEFAULT_MANIFEST = { "rule_files": [], "keyword_file": null };
+
+const STORAGE_KEY = "riftbound_rules_state_v1";
+
+/** In-memory state. Always the single source of truth while the page is open. */
+let _state = {
+  rules: {},      // { [id]: ruleObject }
+  keywords: {},   // { [keyword]: keywordObject }
+};
+
+/* ---------- PERSISTENCE (localStorage) ---------- */
+
+function _saveToLocalStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(_state));
+  } catch (err) {
+    console.warn("[data-loader] ไม่สามารถบันทึกลง localStorage ได้:", err);
+  }
+}
+
+function _loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") {
+      return { rules: parsed.rules || {}, keywords: parsed.keywords || {} };
+    }
+  } catch (err) {
+    console.warn("[data-loader] localStorage เสีย/อ่านไม่ได้:", err);
+  }
+  return null;
+}
+
+/* ---------- FETCH LOADERS ---------- */
+
+async function loadManifest() {
+  try {
+    const res = await fetch("data/manifest.json");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn("[data-loader] โหลด manifest.json ไม่สำเร็จ (ใช้ค่า default แทน):", err.message);
+    return DEFAULT_MANIFEST;
+  }
+}
+
+async function loadAllRules() {
+  const manifest = await loadManifest();
+  const files = manifest.rule_files || [];
+  let loadedCount = 0;
+
+  for (const filename of files) {
+    try {
+      const res = await fetch(`data/${filename}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const arr = await res.json();
+      if (!Array.isArray(arr)) throw new Error("ไฟล์นี้ไม่ใช่ JSON array");
+      for (const rule of arr) {
+        if (rule && rule.id) _state.rules[rule.id] = rule;
+      }
+      loadedCount++;
+    } catch (err) {
+      console.warn(`[data-loader] โหลด data/${filename} ไม่สำเร็จ:`, err.message);
+    }
+  }
+
+  _updateStatusBar({ filesLoaded: loadedCount, filesTotal: files.length });
+  return _state.rules;
+}
+
+async function loadKeywords() {
+  const manifest = await loadManifest();
+  const filename = manifest.keyword_file;
+  if (!filename) return _state.keywords;
+
+  try {
+    const res = await fetch(`data/${filename}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const arr = await res.json();
+    if (!Array.isArray(arr)) throw new Error("ไฟล์นี้ไม่ใช่ JSON array");
+    for (const kw of arr) {
+      if (kw && kw.keyword) _state.keywords[kw.keyword] = kw;
+    }
+  } catch (err) {
+    console.warn(`[data-loader] โหลด data/${filename} ไม่สำเร็จ:`, err.message);
+  }
+
+  return _state.keywords;
+}
+
+/* ---------- VALIDATION HELPERS ---------- */
+
+function _isValidRule(obj) {
+  return obj && typeof obj === "object" && typeof obj.id === "string" && Array.isArray(obj.content);
+}
+
+function _isValidKeyword(obj) {
+  return obj && typeof obj === "object" && typeof obj.keyword === "string";
+}
+
+/* ---------- IMPORT / EXPORT ---------- */
+
+function importJSON(text) {
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (err) {
+    return { success: false, error: "JSON ไม่ถูกต้อง (parse ไม่ผ่าน): " + err.message };
+  }
+
+  let rulesAdded = 0;
+  let keywordsAdded = 0;
+  let skipped = 0;
+
+  function mergeArray(arr) {
+    for (const item of arr) {
+      if (_isValidRule(item)) { _state.rules[item.id] = item; rulesAdded++; }
+      else if (_isValidKeyword(item)) { _state.keywords[item.keyword] = item; keywordsAdded++; }
+      else { skipped++; }
+    }
+  }
+
+  if (Array.isArray(parsed)) {
+    mergeArray(parsed);
+  } else if (parsed && typeof parsed === "object") {
+    if (Array.isArray(parsed.rules)) mergeArray(parsed.rules);
+    if (Array.isArray(parsed.keywords)) mergeArray(parsed.keywords);
+    if (!Array.isArray(parsed.rules) && !Array.isArray(parsed.keywords)) {
+      return { success: false, error: "ไม่พบ array ที่ตรง schema (rule หรือ keyword) ใน JSON นี้" };
+    }
+  } else {
+    return { success: false, error: "ต้องเป็น JSON array หรือ object ที่มี rules/keywords" };
+  }
+
+  if (rulesAdded === 0 && keywordsAdded === 0) {
+    return { success: false, error: "ไม่มีรายการใดตรง schema เลย (เช็ค field 'id'+'content' หรือ 'keyword')" };
+  }
+
+  _saveToLocalStorage();
+  _updateStatusBar();
+  document.dispatchEvent(new CustomEvent("riftbound:data-updated"));
+
+  return { success: true, added: { rules: rulesAdded, keywords: keywordsAdded }, skipped };
+}
+
+function exportState() {
+  const rulesArr = Object.values(_state.rules).sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+  const keywordsArr = Object.values(_state.keywords).sort((a, b) => a.keyword.localeCompare(b.keyword));
+  return JSON.stringify({ rules: rulesArr, keywords: keywordsArr }, null, 2);
+}
+
+function getState() {
+  return _state;
+}
+
+/* ---------- STATUS BAR ---------- */
+
+function _updateStatusBar(fetchInfo) {
+  const el = document.getElementById("data-status");
+  if (!el) return;
+
+  const ruleCount = Object.keys(_state.rules).length;
+  const kwCount = Object.keys(_state.keywords).length;
+
+  let text = `กฎ ${ruleCount} ข้อ · Keyword ${kwCount} คำ`;
+  if (fetchInfo && fetchInfo.filesTotal > 0) {
+    text = `ไฟล์ ${fetchInfo.filesLoaded}/${fetchInfo.filesTotal} · ${text}`;
+  }
+  el.textContent = text;
+}
+
+/* ---------- IMPORT MODAL — UI WIRING ---------- */
+
+function _openImportModal() {
+  const scrim = document.getElementById("import-scrim");
+  const msg = document.getElementById("import-msg");
+  if (msg) { msg.textContent = ""; msg.style.color = ""; }
+  if (scrim) scrim.hidden = false;
+}
+
+function _closeImportModal() {
+  const scrim = document.getElementById("import-scrim");
+  if (scrim) scrim.hidden = true;
+}
+
+function _setImportMessage(text, isError) {
+  const msg = document.getElementById("import-msg");
+  if (!msg) return;
+  msg.textContent = text;
+  msg.style.color = isError ? "#A24E3B" : "#3F6B4A";
+}
+
+function _handleImportSubmit() {
+  const textarea = document.getElementById("import-textarea");
+  if (!textarea || !textarea.value.trim()) {
+    _setImportMessage("กรุณาวาง JSON ก่อน Import", true);
+    return;
+  }
+
+  const result = importJSON(textarea.value);
+
+  if (result.success) {
+    const parts = [];
+    if (result.added.rules) parts.push(`กฎ ${result.added.rules} ข้อ`);
+    if (result.added.keywords) parts.push(`keyword ${result.added.keywords} คำ`);
+    let text = `Import สำเร็จ: ${parts.join(", ")}`;
+    if (result.skipped) text += ` (ข้าม ${result.skipped} รายการที่ schema ไม่ตรง)`;
+    _setImportMessage(text, false);
+    textarea.value = "";
+  } else {
+    _setImportMessage(result.error, true);
+  }
+}
+
+function _handleExport() {
+  const textarea = document.getElementById("import-textarea");
+  const json = exportState();
+
+  if (textarea) { textarea.value = json; textarea.select(); }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(json).then(
+      () => _setImportMessage("Export แล้ว — คัดลอกไปยัง clipboard ด้วย", false),
+      () => _setImportMessage("Export แล้ว (คัดลอกไม่สำเร็จ ให้เลือกข้อความเองแล้ว Ctrl+C)", false)
+    );
+  } else {
+    _setImportMessage("Export แล้ว — เลือกข้อความในกล่องแล้วคัดลอกได้เลย", false);
+  }
+}
+
+function _wireImportModal() {
+  const openBtn = document.getElementById("import-open-btn");
+  const closeBtn = document.getElementById("import-close-btn");
+  const submitBtn = document.getElementById("import-submit-btn");
+  const exportBtn = document.getElementById("export-btn");
+  const scrim = document.getElementById("import-scrim");
+
+  if (openBtn) openBtn.addEventListener("click", _openImportModal);
+  if (closeBtn) closeBtn.addEventListener("click", _closeImportModal);
+  if (submitBtn) submitBtn.addEventListener("click", _handleImportSubmit);
+  if (exportBtn) exportBtn.addEventListener("click", _handleExport);
+
+  if (scrim) {
+    scrim.addEventListener("click", (e) => { if (e.target === scrim) _closeImportModal(); });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && scrim && !scrim.hidden) _closeImportModal();
+  });
+}
+
+/* ---------- INIT ---------- */
+
+async function _initDataLoader() {
+  const local = _loadFromLocalStorage();
+  if (local) _state = local;
+
+  const manifest = await loadManifest();
+
+  const fetchedRules = {};
+  for (const filename of manifest.rule_files || []) {
+    try {
+      const res = await fetch(`data/${filename}`);
+      if (res.ok) {
+        const arr = await res.json();
+        if (Array.isArray(arr)) {
+          for (const rule of arr) if (rule && rule.id) fetchedRules[rule.id] = rule;
+        }
+      }
+    } catch (err) { /* silent — see loadAllRules() for logged version */ }
+  }
+  _state.rules = { ...fetchedRules, ..._state.rules };
+
+  if (manifest.keyword_file) {
+    try {
+      const res = await fetch(`data/${manifest.keyword_file}`);
+      if (res.ok) {
+        const arr = await res.json();
+        if (Array.isArray(arr)) {
+          const fetchedKw = {};
+          for (const kw of arr) if (kw && kw.keyword) fetchedKw[kw.keyword] = kw;
+          _state.keywords = { ...fetchedKw, ..._state.keywords };
+        }
+      }
+    } catch (err) { /* silent */ }
+  }
+
+  _updateStatusBar({
+    filesLoaded: Object.keys(fetchedRules).length > 0 ? (manifest.rule_files || []).length : 0,
+    filesTotal: (manifest.rule_files || []).length,
+  });
+
+  _wireImportModal();
+  document.dispatchEvent(new CustomEvent("riftbound:data-ready"));
+}
+
+document.addEventListener("DOMContentLoaded", _initDataLoader);
+</script>
+
+<!-- ==========================================================================
+     BLOCK 3 — RULE CARD RENDERER
+     Turns rule objects into the .rule-card markup Block 1's CSS styles.
+     Renders EN/TH as plain textContent only — no keyword markup here.
+     Status: DONE
+     Exposes: renderCard(rule), renderAllCards(rulesObject)
+     ========================================================================== -->
+<script>
+function _sectionBucket(id) {
+  const n = parseInt(id, 10);
+  if (isNaN(n)) return "000";
+  if (n < 100) return "000";
+  if (n < 500) return "100";
+  if (n < 600) return "500";
+  if (n < 700) return "600";
+  return "700";
+}
+
+function _indentClass(num) {
+  if (!num) return "";
+  const depth = num.split(".").length - 1;
+  if (depth <= 1) return "";
+  if (depth === 2) return "indent-1";
+  return "indent-2";
+}
+
+function _el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function _renderContentItem(item) {
+  if (item.type === "reminder" || item.type === "example") {
+    const box = _el("div", `rule-box ${item.type === "reminder" ? "box-reminder" : "box-example"}`);
+    box.appendChild(_el("span", "box-label", item.type === "reminder" ? "Reminder" : "Example"));
+    box.appendChild(_el("p", "en", item.en || ""));
+    box.appendChild(_el("p", "th", item.th || ""));
+    return box;
+  }
+
+  const indent = _indentClass(item.num);
+  const line = _el("div", `rule-line${indent ? " " + indent : ""}`);
+  if (item.num) line.appendChild(_el("p", "num", item.num));
+  line.appendChild(_el("p", "en", item.en || ""));
+  line.appendChild(_el("p", "th", item.th || ""));
+  return line;
+}
+
+function renderCard(rule) {
+  const card = _el("article", "rule-card");
+  card.dataset.section = _sectionBucket(rule.id);
+  card.id = rule.id;
+  card.style.scrollMarginTop = "90px";
+
+  const badge = _el("div", "rule-card-badge", rule.id);
+  card.appendChild(badge);
+
+  const body = _el("div", "rule-card-body");
+  if (rule.title_en) body.appendChild(_el("p", "rule-card-title-en", rule.title_en));
+  if (rule.title_th) body.appendChild(_el("h3", "rule-card-title", rule.title_th));
+
+  const content = Array.isArray(rule.content) ? rule.content : [];
+  for (const item of content) body.appendChild(_renderContentItem(item));
+
+  card.appendChild(body);
+  return card;
+}
+
+function renderAllCards(rulesObject) {
+  const container = _el("div");
+  const ids = Object.keys(rulesObject || {}).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  for (const id of ids) container.appendChild(renderCard(rulesObject[id]));
+  return container;
+}
+
+function _syncCardContainer() {
+  const container = document.getElementById("card-container");
+  const emptyState = document.getElementById("empty-state");
+  if (!container) return;
+
+  const state = typeof getState === "function" ? getState() : { rules: {} };
+  const ruleCount = Object.keys(state.rules || {}).length;
+
+  [...container.children].forEach((child) => { if (child.id !== "empty-state") child.remove(); });
+
+  if (ruleCount === 0) {
+    if (emptyState) emptyState.hidden = false;
+    return;
+  }
+
+  if (emptyState) emptyState.hidden = true;
+  const rendered = renderAllCards(state.rules);
+  container.appendChild(rendered);
+}
+
+document.addEventListener("DOMContentLoaded", _syncCardContainer);
+document.addEventListener("riftbound:data-ready", _syncCardContainer);
+document.addEventListener("riftbound:data-updated", _syncCardContainer);
+</script>
+
+<!-- ==========================================================================
+     BLOCK 4 — KEYWORD TOOLTIP ENGINE  (NEW)
+     ---------------------------------------------------------------------
+     Responsibilities:
+       1. Read keywords from getState().keywords (Block 2) as a lookup table.
+       2. AFTER Block 3 rebuilds #card-container, scan its rendered .en/.th
+          text nodes for keyword matches (word-boundary, case-sensitive,
+          longest-keyword-first so e.g. "Rune Pool" wins over "Rune").
+       3. Wrap each match in <span class="keyword" data-kw="...">, matching
+          the same markup/CSS Block 1 already styles.
+       4. On hover, show a floating popup with short_en / short_th and a
+          "ดูกฎเต็ม →" link to rule_ref (scrolls to the matching #id card).
+     Status: DONE
+     Exposes: attachTooltips(container)
+     Runs automatically on riftbound:data-ready / riftbound:data-updated,
+     registered AFTER Block 3's listeners (script order below), so it always
+     scans the freshly-rendered DOM, never the placeholder card.
+     ========================================================================== -->
+<script>
+function _escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Builds one regex matching any keyword, longest first, word-boundary, case-sensitive. */
+function _buildKeywordRegex(keywordMap) {
+  const names = Object.keys(keywordMap).sort((a, b) => b.length - a.length);
+  if (names.length === 0) return null;
+  const alternation = names.map(_escapeRegExp).join("|");
+  return new RegExp(`\\b(${alternation})\\b`, "g");
+}
+
+/** Walks text nodes under `root` and wraps keyword matches in <span class="keyword">. */
+function _wrapKeywordsInElement(root, regex, keywordMap) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      // Skip text already inside a keyword span, or inside the rule number badge.
+      if (node.parentElement && node.parentElement.closest(".keyword, .num, .rule-card-badge")) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      return regex.test(node.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+    },
+  });
+
+  const targets = [];
+  let node;
+  while ((node = walker.nextNode())) targets.push(node);
+
+  for (const textNode of targets) {
+    regex.lastIndex = 0;
+    const text = textNode.nodeValue;
+    const frag = document.createDocumentFragment();
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      const [full] = match;
+      if (match.index > lastIndex) {
+        frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+      }
+      const span = document.createElement("span");
+      span.className = "keyword";
+      span.dataset.kw = full;
+      span.textContent = full;
+      frag.appendChild(span);
+      lastIndex = match.index + full.length;
+    }
+    frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+    textNode.parentNode.replaceChild(frag, textNode);
+  }
+}
+
+/** Scans every .rule-card inside `container` (default: #card-container) and highlights keywords. */
+function attachTooltips(container) {
+  const root = container || document.getElementById("card-container");
+  if (!root) return;
+
+  const state = typeof getState === "function" ? getState() : { keywords: {} };
+  const keywordMap = state.keywords || {};
+  const regex = _buildKeywordRegex(keywordMap);
+  if (!regex) return; // no keywords loaded yet — nothing to highlight
+
+  const scopes = root.querySelectorAll(".rule-card:not(.placeholder-card) .en, .rule-card:not(.placeholder-card) .th");
+  scopes.forEach((el) => _wrapKeywordsInElement(el, regex, keywordMap));
+}
+
+/* ---------- HOVER POPUP ---------- */
+
+let _ttEl = null;
+
+function _ensureTooltipEl() {
+  if (_ttEl) return _ttEl;
+  _ttEl = document.createElement("div");
+  _ttEl.className = "kw-tooltip";
+  document.body.appendChild(_ttEl);
+  return _ttEl;
+}
+
+function _positionTooltip(el, mouseX, mouseY) {
+  const margin = 14;
+  const rect = el.getBoundingClientRect();
+  let left = mouseX + margin;
+  let top = mouseY + margin;
+
+  if (left + rect.width > window.innerWidth - 8) left = mouseX - rect.width - margin;
+  if (top + rect.height > window.innerHeight - 8) top = mouseY - rect.height - margin;
+
+  el.style.left = `${Math.max(8, left)}px`;
+  el.style.top = `${Math.max(8, top)}px`;
+}
+
+function _showTooltip(kwName, mouseX, mouseY) {
+  const state = typeof getState === "function" ? getState() : { keywords: {} };
+  const kw = (state.keywords || {})[kwName];
+  if (!kw) return;
+
+  const el = _ensureTooltipEl();
+  el.innerHTML = "";
+
+  const title = _el("p", "kw-tt-title", kwName);
+  el.appendChild(title);
+  if (kw.short_en) el.appendChild(_el("p", "kw-tt-en", kw.short_en));
+  if (kw.short_th) el.appendChild(_el("p", "kw-tt-th", kw.short_th));
+
+  if (kw.rule_ref) {
+    const link = document.createElement("a");
+    link.className = "kw-tt-link";
+    link.href = `#${kw.rule_ref}`;
+    link.textContent = "ดูกฎเต็ม →";
+    el.appendChild(link);
+  }
+
+  el.classList.add("visible");
+  _positionTooltip(el, mouseX, mouseY);
+}
+
+function _hideTooltip() {
+  if (_ttEl) _ttEl.classList.remove("visible");
+}
+
+function _wireTooltipEvents() {
+  // Event delegation: works for keyword spans created at any time, no rebinding needed.
+  document.addEventListener("mouseover", (e) => {
+    const span = e.target.closest(".keyword");
+    if (!span) return;
+    _showTooltip(span.dataset.kw, e.clientX, e.clientY);
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (_ttEl && _ttEl.classList.contains("visible") && e.target.closest(".keyword")) {
+      _positionTooltip(_ttEl, e.clientX, e.clientY);
+    }
+  });
+
+  document.addEventListener("mouseout", (e) => {
+    const span = e.target.closest(".keyword");
+    if (!span) return;
+    // Don't hide if we moved onto the tooltip itself (so its link is clickable).
+    if (e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest(".kw-tooltip")) return;
+    _hideTooltip();
+  });
+
+  // Clicking the "ดูกฎเต็ม" link should close the popup after the jump.
+  document.addEventListener("click", (e) => {
+    if (e.target.closest(".kw-tt-link")) _hideTooltip();
+  });
+}
+
+document.addEventListener("DOMContentLoaded", _wireTooltipEvents);
+document.addEventListener("riftbound:data-ready", () => attachTooltips());
+document.addEventListener("riftbound:data-updated", () => attachTooltips());
+</script>
+
+<!-- ==========================================================================
+     BLOCK 5 — NAVIGATION & SEARCH  (not yet built)
+     Planned responsibilities:
+       - buildSidebar(): read state → group #nav-tree by section (000/100/500/600/700)
+       - wireSearch(): real-time filter on #search-input across id / en / th / keyword
+       - click result → scroll to card + temporary highlight
+       - manage #<id> URL hash so links to a specific rule are shareable
+     ========================================================================== -->
+
+<!-- ==========================================================================
+     BLOCK 6 — KEYWORD GLOSSARY PAGE  (not yet built)
+     Planned responsibilities:
+       - renderGlossary(): reuse state.keywords to populate #glossary-grid
+         (A-Z cards), each linking to its rule_ref
+     ========================================================================== -->
+
+<!-- ==========================================================================
+     BLOCK 7 — main.js (app composer)  (not yet built)
+     Planned responsibilities:
+       - orchestrate init order once all blocks exist: load data → render
+         cards → attachTooltips() → buildSidebar()
+       - wire #nav-rules-btn / #nav-glossary-btn view toggle
+       - wire hamburger / sidebar-close / sidebar-scrim for mobile
+     ========================================================================== -->
+
+</body>
+</html>
